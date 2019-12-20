@@ -1,5 +1,6 @@
 #include "Angel.h"
 #include "mat.h"
+#include "include/TriMesh.h"
 #include <assert.h>
 #include<vector>
 #include<fstream>
@@ -14,7 +15,8 @@ using namespace std;
 #pragma comment(lib, "FreeImage.lib")
 
 //////////////////////////////////////////////////////////////////
-
+vec4 lightPos;
+GLuint lightPosID;
 GLuint MatrixID;
 GLuint vPositionID;
 GLuint MatrixID2;
@@ -25,6 +27,7 @@ struct CUBE {
 	GLuint cubeIBO[6];
 	GLuint cubeUVBO[6];
 	GLuint cubeTexBO[6];
+	GLuint cubeNormal[6];
 } SKY_CUBE;
 
 
@@ -57,21 +60,24 @@ struct SKY {
 } sky;
 
 GLfloat Boxheight = 2.0;
-
+///////
+TriMesh* mesh = new TriMesh();
 
 
 //////////////////////////////////////////////////////////////////////////////////
 //   调试
 vector<vec3> ground_points;
 vector<vec3> POINTS1;
-vector<vec3> INDEXS;
+vector<vec3i> INDEXS;
 GLuint GROUND_IBO;
 GLuint GROUND_VBO;
 GLuint GROUND_UVBO;
 vector<vec2> GROUND_UV;
 int TEXTURE2 = 0;
 
-
+GLuint modelMatrixID;
+GLuint viewMatrixID;
+GLuint projMatrixID;
 
 const int X_AXIS = 0;
 const int Y_AXIS = 1;
@@ -174,7 +180,7 @@ namespace Camera
 ///////////////////////////////////////////////////////////////////////////
 // 地形
 vector<vec3> NORMALS;
-float verticeScale = 0.1f;
+float verticeScale = 0.2f;
 float yScale = 10.0f;
 int imgWidth;
 int imgHeight;
@@ -183,7 +189,7 @@ static unsigned int *indices;
 static  GLfloat *uvs;
 static GLfloat *normals;
 GLuint VBO;//顶点缓冲对象
-GLuint IBO;//索引缓冲对象
+
 GLuint TextureID;
 GLuint TextureID2;
 GLuint vertexUVID;
@@ -212,6 +218,11 @@ bool mouseLeftDown = false;//鼠标左键按下
 
 /////////////////////////////////////////////////////
 // 物体
+GLuint GVBO;
+GLuint GColor;
+GLuint GIBO;
+vector<vec3i> Gindex;
+
 vector<vec4> points;
 vector<vec4> colors;
 int nVertices, nFaces, nLine;
@@ -222,6 +233,9 @@ vector<vec4> vertexColors;
 GLuint cube;
 GLuint colorID;
 
+
+GLuint normal_VBO;
+GLuint IBO;
 
 /////////////////////////////////////////////////////////////////////////
 // 机器人
@@ -265,7 +279,7 @@ MatrixStack  mvstack;
 mat4 model_view;
 point4 cube_points[NumVertices];
 color4 cube_colors[NumVertices];
-
+vec3 cube_normals[NumVertices];
 point4 cube_vertices[8] = {
 	point4(-0.5, -0.5, 0.5, 1.0),
 	point4(-0.5, 0.5, 0.5, 1.0),
@@ -359,38 +373,31 @@ color4 vertex_colors[8] = {
 
 double random(int max);
 void storeTrianglePoints(int a, int b, int c);
-void generate(string filename);
+void initOFF(string filename);
 static void SpecialKeyboard(int Key, int x, int y);
 void mouseCB(int button, int state, int x, int y);
 void mouseMotionCB(int x, int y);
 FIBITMAP* getDib(string ptrFileName);
-void CreateVertexBuffer(string file);
-void CreateIndexBuffer();
+void initGround(string);
+void displayGROUND();
 void load_texture_FreeImage(std::string file_name, GLuint& m_texName);
 void CreateTexture(string filename, GLuint &OBJ);
-void CreateNormal();
 void init();
 void Display();
 void updateTheta(int axis, int sign);
 void idle();
 void keyboard(unsigned char key, int x, int y);
-void drawGround();
 mat4 Transpose(mat4 matrix);
 void mouseWheel(int, int, int, int);
-void CreateSky(vector<vec3> skyVertex, vector<vec3> index, vector<vec2> uvIndex, GLuint face, string file);
-void displaySky(GLuint face, mat4 m);
-
-void CreateBox();
-void displayBox(mat4 modelViewMatrix);
+void initSky();
 
 ///
 void CreateBox(vector<vec3> cubePoints, ImgURL imgURL, CUBE &cube);
 void displayBox(mat4 modelViewMatrix, CUBE& cube);
-void Createcube(vector<vec3> cubeVertex, vector<vec3> index, vector<vec2> uvIndex, GLuint face, string file, CUBE &cube);
+void Createcube(vector<vec3> cubeVertex, vector<vec3i> index, vector<vec2> uvIndex, GLuint face, string file, CUBE &cube);
 void displaycube(GLuint face, mat4 m, CUBE &cube);
 
-
-
+void drawCube(mat4 m);
 void menu(int option);
 void addMenuItem();
 void displayRobot(mat4);
@@ -407,8 +414,8 @@ void head(vec4 color_torso);
 void torso(vec4 color_torso);
 void colorcube(void);
 void quad(int a, int b, int c, int d);
-void Create();
-void displayGROUND(mat4 m);
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
@@ -462,8 +469,10 @@ void storeTrianglePoints(int a, int b, int c)
 	colors.push_back(vertexColors[c]);
 }
 
-void generate(string filename)
+
+void initOFF(string filename)
 {
+
 	// 存储每个三角形的顶点位置和颜色信息。
 	vertices1.clear();
 	vertexColors.clear();
@@ -495,6 +504,19 @@ void generate(string filename)
 		input >> a >> b >> c;
 		storeTrianglePoints(a, b, c);
 	}
+	vector<vec3> nNormals;
+
+	for (int i = 0;i != points.size();i++) {
+		nNormals.push_back(vec3(points[i].x, points[i].y,points[i].z));
+	}
+
+
+	glGenBuffers(1, &cube);
+	glBindBuffer(GL_ARRAY_BUFFER, cube);
+	glBufferData(GL_ARRAY_BUFFER, (points.size() +  colors.size())* sizeof(vec4) + nNormals.size()*sizeof(vec3), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(vec4), &points[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, points.size() * sizeof(vec4), colors.size() * sizeof(vec4), &colors[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, (points.size() + colors.size())* sizeof(vec4), nNormals.size() * sizeof(vec3), &nNormals[0]);
 
 }
 
@@ -529,7 +551,6 @@ static void SpecialKeyboard(int Key, int x, int y)
 		position -= right0  * speed;
 		break;
 	}
-	//cout << position << direction << " " << verticalAngle << " " << horizontalAngle << endl;
 	glutPostRedisplay();//设置窗口重绘
 }
 
@@ -588,61 +609,6 @@ FIBITMAP* getDib(string ptrFileName) {
 	}
 }
 
-
-float getPix(BYTE *pixels, int i, int k) {
-	return 1.0*(int(pixels[imgHeight*i + k]));
-}
-
-//创建顶点
-
-void CreateVertexBuffer(string file)
-{
-	fstream in(file);
-	in >> imgHeight >> imgWidth;
-	for (int i = 0; i < imgHeight; i++)
-	{
-		for (int j = 0; j < imgWidth; j++)
-		{
-			int pix;
-			in >> pix;
-			ground_points.push_back(vec3(verticeScale* 1.0*(i), yScale* 1.0*pix / 255.0f, verticeScale * 1.0*(j)));
-		}
-	}
-	//初始化相机
-	position = vec3(0.5*verticeScale*(imgWidth - 1), 0.5*yScale*Boxheight, 0.5*verticeScale*(imgHeight - 1));
-	direction = vec3(-0.5*verticeScale*(imgWidth - 1), -0.5*yScale*Boxheight, -0.5*verticeScale*(imgHeight - 1));
-}
-
-void CreateIndexBuffer()
-{
-	GLfloat W = imgWidth;
-	GLfloat H = imgHeight;
-	int f = 0;
-	for (int i = 0; i < imgHeight - 1; i++){
-		for (int j = 0; j < imgWidth - 1; j++){
-
-			POINTS1.push_back(ground_points[i*imgWidth + j]);
-			POINTS1.push_back(ground_points[i*imgWidth + j + 1]);
-			POINTS1.push_back(ground_points[(i + 1)*imgWidth + j]);
-
-			POINTS1.push_back(ground_points[(i + 1)*imgWidth + j]);
-			POINTS1.push_back(ground_points[i*imgWidth + j + 1]);
-			POINTS1.push_back(ground_points[(i + 1)*imgWidth + j + 1]);
-
-			INDEXS.push_back(vec3(i*imgWidth + j,i*imgWidth + j + 1,(i + 1)*imgWidth + j));
-			INDEXS.push_back(vec3((i + 1)*imgWidth + j, i*imgWidth + j + 1, (i + 1)*imgWidth + j + 1));
-
-			GROUND_UV.push_back(vec2(1.0*((j + f) % imgWidth) / W, 1.0*(H - i) / H));
-			GROUND_UV.push_back(vec2(1.0*((j + 1 + f) % imgWidth) / W, 1.0*(H - i) / H));
-			GROUND_UV.push_back(vec2(1.0*((j + f) % imgWidth) / W, 1.0*(H - i - 1) / H));
-
-			GROUND_UV.push_back(vec2(1.0*((j + 1 + f) % imgWidth) / W, 1.0*(H - i) / H));
-			GROUND_UV.push_back(vec2(1.0*((j + f) % imgWidth) / W, 1.0*(H - i - 1) / H));
-			GROUND_UV.push_back(vec2(1.0*((j + 1 + f) % imgWidth) / W, 1.0*(H - i - 1) / H));
-		}
-	}
-}
-
 void load_texture_FreeImage(std::string file_name, GLuint& m_texName)
 {
 
@@ -676,6 +642,67 @@ void load_texture_FreeImage(std::string file_name, GLuint& m_texName)
 	FreeImage_Unload(dib);
 }
 
+float getPix(BYTE *pixels, int i, int k) {
+	return 1.0*(int(pixels[imgHeight*i + k]));
+}
+
+void initGround(string file)
+{
+	fstream in(file);
+	in >> imgHeight >> imgWidth;
+
+	//顶点坐标 UV坐标 法向量
+	for (int i = 0; i < imgHeight; i++)
+	{
+		for (int j = 0; j < imgWidth; j++)
+		{
+			int pix;
+			in >> pix;
+			ground_points.push_back(vec3(verticeScale* 1.0*(i), yScale* 1.0*pix / 255.0f, verticeScale * 1.0*(j)));
+			GROUND_UV.push_back(vec2(1.0*j / imgWidth, 1.0*(imgHeight - i) / imgHeight));
+			NORMALS.push_back(vec3(verticeScale* 1.0*(i), yScale* 1.0*pix / 255.0f, verticeScale * 1.0*(j)));
+		}
+	}
+
+	// 索引
+
+	for (int i = 0; i < imgHeight - 1; i++){
+		for (int j = 0; j < imgWidth - 1; j++){
+
+			INDEXS.push_back(vec3i(i*imgWidth + j,i*imgWidth + j + 1,(i + 1)*imgWidth + j));
+			INDEXS.push_back(vec3i((i + 1)*imgWidth + j, i*imgWidth + j + 1, (i + 1)*imgWidth + j + 1));
+		}
+	}
+
+	// 纹理
+	CreateTexture("./image/bottom.jpg", TexBO); //底部
+	CreateTexture("./image/t1.jpg", TexBO2);//上部
+
+	glGenBuffers(1, &GROUND_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, GROUND_VBO);
+	glBufferData(GL_ARRAY_BUFFER, ground_points.size() * sizeof(vec3), &ground_points[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &GROUND_IBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GROUND_IBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, INDEXS.size() * sizeof(vec3i), &INDEXS[0], GL_STATIC_DRAW);
+
+
+	glGenBuffers(1, &GROUND_UVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, GROUND_UVBO);
+	glBufferData(GL_ARRAY_BUFFER, GROUND_UV.size() * sizeof(vec2), &GROUND_UV[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &NormalBO);
+	glBindBuffer(GL_ARRAY_BUFFER, NormalBO);
+	glBufferData(GL_ARRAY_BUFFER, NORMALS.size() * sizeof(vec3), &NORMALS[0], GL_STATIC_DRAW);
+
+	//初始化相机
+	position = vec3(0.5*verticeScale*(imgWidth - 1), 0.5*yScale*Boxheight, 0.5*verticeScale*(imgHeight - 1));
+	direction = vec3(-0.5*verticeScale*(imgWidth - 1), -0.5*yScale*Boxheight, -0.5*verticeScale*(imgHeight - 1));
+	GLuint depthID = glGetUniformLocation(programID, "depth");
+	glUniform1f(depthID, 1.0 * 140 / 255.0f);
+}
+
+
 //创建贴图
 void CreateTexture(string filename, GLuint &OBJ)
 {
@@ -696,25 +723,8 @@ void CreateTexture(string filename, GLuint &OBJ)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 	glGenerateMipmap(GL_TEXTURE_2D);
-	
 }
 
-//创建法线
-void CreateNormal()
-{
-	for (int i = 0;i != INDEXS.size();i++) {
-		vec3 index = INDEXS[i];
-		vec3 point1 = POINTS1[index[0]];
-		vec3 point2 = POINTS1[index[1]];
-		vec3 point3 = POINTS1[index[2]];
-
-		vec3 n1 = point1 - point2;
-		vec3 n2 = point1 - point3;
-		vec3 N = normalize(cross(n1, n2));
-
-		NORMALS.push_back(N);
-	}
-}
 
 void init() {
 	glEnable(GL_DEPTH_TEST);
@@ -731,6 +741,10 @@ void init() {
 	MatrixID2 = glGetUniformLocation(programID, "gWorld");
 	isCubeID = glGetUniformLocation(programID, "isCube");
 	colorID = glGetAttribLocation(programID, "color");
+	modelMatrixID = glGetUniformLocation(programID, "modelMatrix");
+	viewMatrixID = glGetUniformLocation(programID, "viewMatrix");
+	projMatrixID = glGetUniformLocation(programID, "projMatrix");
+	lightPosID = glGetUniformLocation(programID, "lightPos");
 
 	m_dirLightLocation.Color = glGetUniformLocation(programID, "gDirectionalLight.Color");
 	m_dirLightLocation.AmbientIntensity = glGetUniformLocation(programID, "gDirectionalLight.AmbientIntensity");
@@ -738,26 +752,14 @@ void init() {
 	m_dirLightLocation.DiffuseIntensity = glGetUniformLocation(programID, "gDirectionalLight.DiffuseIntensity");
 	m_dirLightLocation.lightPos = glGetUniformLocation(programID, "gDirectionalLight.lightPos");
 
-	CreateVertexBuffer("./data/data_2png.txt");
-	CreateIndexBuffer();
-	CreateTexture("./image/t2.jpg", TexBO);//底部
-	CreateTexture("./image/t1.jpg", TexBO2);
-	CreateNormal();
-	CreateBox();
-	Create();
-	
-	generate("./off/cow.off");
 
-	glGenBuffers(1, &cube);
-	glBindBuffer(GL_ARRAY_BUFFER, cube);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(vec4)+ colors.size() * sizeof(vec4), NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(vec4), &points[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, points.size() * sizeof(vec4), colors.size() * sizeof(vec4), &colors[0]);
-
+	initGround("./data/data_2png.txt");
+	initSky();
+	initOFF("./off/sphere.off");
 	initRobot();
 }
 
-void CreateBox() {
+void initSky() {
 	GLfloat y = yScale * Boxheight;
 	GLfloat z = verticeScale*1.0*(imgHeight - 1);
 	GLfloat x = verticeScale*1.0*(imgWidth - 1);
@@ -765,7 +767,6 @@ void CreateBox() {
 		vec3(0,y,z),vec3(0,0,z),vec3(x,y,z),vec3(x,0,z),
 		vec3(x,y,0),vec3(x,0,0),vec3(0,y,0),vec3(0,0,0)
 	};
-
 
 	ImgURL imgURL;	string BASC_URL = "./image/sky/";
 	imgURL.back_img = BASC_URL+ "back.png";
@@ -775,66 +776,26 @@ void CreateBox() {
 	imgURL.right_img = BASC_URL + "right.png";
 	imgURL.top_img = BASC_URL + "top.png";
 	CreateBox(v, imgURL, SKY_CUBE);
-
-}
-
-void displayBox(mat4 modelViewMatrix) {
-
-	displayBox(modelViewMatrix, SKY_CUBE);
 }
 
 
-void Create() {
-
-	glGenBuffers(1, &GROUND_VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, GROUND_VBO);
-	glBufferData(GL_ARRAY_BUFFER, POINTS1.size() * sizeof(vec3), &POINTS1[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &GROUND_IBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GROUND_IBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, INDEXS.size() * sizeof(vec3), &INDEXS[0], GL_STATIC_DRAW);
-
-
-	glGenBuffers(1, &GROUND_UVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, GROUND_UVBO);
-	glBufferData(GL_ARRAY_BUFFER, GROUND_UV.size() * sizeof(vec2), &GROUND_UV[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &NormalBO);
-	glBindBuffer(GL_ARRAY_BUFFER, NormalBO);
-	glBufferData(GL_ARRAY_BUFFER, NORMALS.size() * sizeof(vec3), &NORMALS[0], GL_STATIC_DRAW);
-}
-
-void displayGROUND(mat4 m) {
+void displayGROUND() {
 
 	GLuint testID = glGetUniformLocation(programID, "test");
 	glUniform1f(testID, 1.0*((TEXTURE2) % imgWidth) / imgWidth);
 	glUniform1i(isCubeID, 2);
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, m);
 
-	//传递顶点、索引、UV
+	//传递顶点、索引、UV  vec2
 	glBindBuffer(GL_ARRAY_BUFFER, GROUND_VBO); //绑定GL_ARRAY_BUFFER缓冲器 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0); //告诉管线怎样解析bufer中的数据  
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GROUND_IBO);
-
-
-
-	glEnableVertexAttribArray(vertexUVID);
-	glBindBuffer(GL_ARRAY_BUFFER, UVBO);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glEnableVertexAttribArray(NormalID);
-	glBindBuffer(GL_ARRAY_BUFFER, NormalBO);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+	glVertexAttribPointer(vPositionID, 3, GL_FLOAT, GL_FALSE, 0, 0); //告诉管线怎样解析bufer中的数据  
+	
 	glEnableVertexAttribArray(vertexUVID);
 	glBindBuffer(GL_ARRAY_BUFFER, GROUND_UVBO);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
+	glVertexAttribPointer(vertexUVID, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
 	glEnableVertexAttribArray(NormalID);
 	glBindBuffer(GL_ARRAY_BUFFER, NormalBO);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	
+	glVertexAttribPointer(NormalID, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	//传递贴图纹理
 	glActiveTexture(GL_TEXTURE0);
@@ -844,115 +805,91 @@ void displayGROUND(mat4 m) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TexBO2);
 	glUniform1i(TextureID2, 1);
-
-	//绘制
-	glDrawArrays(GL_TRIANGLES, 0, POINTS1.size()*3);
-}
-/**/
-void CreateSky(vector<vec3> skyVertex,vector<vec3> index,vector<vec2> uvIndex,GLuint face,string file) {
-
-	CreateTexture(file, sky.SkyTexBO[face]);
-
-	glGenBuffers(1, &sky.SkyVBO[face]);
-	glBindBuffer(GL_ARRAY_BUFFER, sky.SkyVBO[face]);
-	glBufferData(GL_ARRAY_BUFFER, skyVertex.size() * sizeof(vec3), &skyVertex[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &sky.SkyIBO[face]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sky.SkyIBO[face]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(vec3), &index[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &sky.SkyUVBO[face]);
-	glBindBuffer(GL_ARRAY_BUFFER, sky.SkyUVBO[face]);
-	glBufferData(GL_ARRAY_BUFFER, uvIndex.size() * sizeof(vec2), &uvIndex[0], GL_STATIC_DRAW);
-}
-
-
-void displaySky(GLuint face, mat4 m) {
 	
-	glUniform1i(isCubeID, 0);
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, m);
-
-	//传递顶点、索引、UV
-	glBindBuffer(GL_ARRAY_BUFFER, sky.SkyVBO[face]); //绑定GL_ARRAY_BUFFER缓冲器 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0); //告诉管线怎样解析bufer中的数据  
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sky.SkyIBO[face]);
-
-
-	glEnableVertexAttribArray(vertexUVID);
-	glBindBuffer(GL_ARRAY_BUFFER, sky.SkyUVBO[face]);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	//传递贴图纹理
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, sky.SkyTexBO[face]);
-	glUniform1i(TextureID, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GROUND_IBO);
 
 	//绘制
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glDrawElements(GL_TRIANGLES,INDEXS.size() * 3,GL_UNSIGNED_INT,(void*)0);
 }
 
 void Display() {
 	// 清空颜色缓存 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnableVertexAttribArray(vPositionID); //开启顶点属性
-	glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, mat4(1));
 	float FoV = 1.0*initialFoV*M_PI / 180.0;
 	Camera::projMatrix = Camera::perspective(FoV, (float)windowWidth / (float)windowHeight, 0.1f, 100.0f);
 	Camera::viewMatrix = Camera::lookAt(
-		position,
-		position + direction,
+		vec4(position,1),
+		vec4(position + direction,1),
 		vec4(up,0)
 	);
-	Camera::modelMatrix = mat4(1); Scale(2, 2, 2);
-	mat4 modelViewProjMatrix = Camera::modelMatrix*Camera::viewMatrix*Camera::projMatrix;
-	//mat4 modelViewProjMatrix = RotateX(10)*mat4(1)*RotateY(rotateTheta[1])*Scale(0.02, 0.02, 0.02);
+	Camera::modelMatrix = mat4(1);
+
+	mat4 modelViewProjMatrix =  Camera::projMatrix*Camera::viewMatrix* Camera::modelMatrix;
+	//传递矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_FALSE, Camera::modelMatrix);
+	glUniformMatrix4fv(viewMatrixID, 1, GL_FALSE, Camera::viewMatrix);
+	glUniformMatrix4fv(projMatrixID, 1, GL_FALSE, Camera::projMatrix);
+
+
 
 	//传递光照	
-	vec4 center = (verticeScale*1.0*(imgWidth - 1)*0.5, yScale* Boxheight, verticeScale*1.0*(imgHeight - 1)*0.5, 1);
-	vec4 lightPos = RotateY(rotateTheta[1])*modelViewProjMatrix*center + translate;
+	vec4 center(verticeScale*1.0*(imgWidth - 1)*0.5, yScale* Boxheight, verticeScale*1.0*(imgHeight - 1)*0.5, 1);
+	lightPos = (center + translate);
 	if(!canCout)
 		cout << lightPos << endl;
-	//lightPos = vec4(3.69218, 6.55898, 5.20812, 2.02508);
+
+	glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, Camera::viewMatrix*Camera::modelMatrix);
+	//传入光源位置
+
+	glUniform3f(lightPosID, lightPos.x, lightPos.y, lightPos.z);
+
+	//测试用例
 	glUniform3f(m_dirLightLocation.Color, 1, 1, 1);
 	glUniform3f(m_dirLightLocation.Direction, 0, 0, 0);
-	glUniform4f(m_dirLightLocation.lightPos, lightPos.x, lightPos.y, lightPos.z, 1);
-	glUniform1f(m_dirLightLocation.AmbientIntensity, 0.5);//环境光反射系数
-	glUniform1f(m_dirLightLocation.DiffuseIntensity, 0.5);//漫反射系数
+
+	glUniform1f(m_dirLightLocation.AmbientIntensity, 0.2);//环境光反射系数
+	glUniform1f(m_dirLightLocation.DiffuseIntensity, 0.2);//漫反射系数
 
 	//绘制地面
-	displayGROUND(modelViewProjMatrix);
-	displayBox(modelViewProjMatrix);
+	//displayGROUND();
+	//displayBox(mat4(1), SKY_CUBE);
 	displayRobot(modelViewProjMatrix);
 	
 	//绘制立方体
 	vec3 at = normalize( direction)+translate;
 	mat4 m = Translate(at.x, at.y, at.z)*RotateY(rotateTheta[1]);
-	//m = Transpose(modelViewProjMatrix)*m;
 	
-	m = Transpose(modelViewProjMatrix)*Translate(0.5*verticeScale*(imgWidth - 1), 0.5*yScale*Boxheight, 0.5*verticeScale*(imgHeight - 1))*RotateY(rotateTheta[1]);
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, m);
-	glBindBuffer(GL_ARRAY_BUFFER, cube); //绑定GL_ARRAY_BUFFER缓冲器 
-	glVertexAttribPointer(vPositionID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-	glUniform1i(isCubeID, 1);//用于确定传入是不是立方体的颜色
-	glEnableVertexAttribArray(colorID);
-	glVertexAttribPointer(colorID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(points.size() * sizeof(vec4)));
-	glDrawArrays(GL_TRIANGLES, 0, points.size());
-
-
+	//立方体1
+	//m = Translate(0.5*verticeScale*(imgWidth - 1), 0.5*yScale*Boxheight, 0.5*verticeScale*(imgHeight - 1))*RotateY(rotateTheta[1]);
+	drawCube(m);
+	//立方体2
 	m *= Translate(position.x, position.y, position.z)*Scale(4,4,4);
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, m);
-	glBindBuffer(GL_ARRAY_BUFFER, cube); //绑定GL_ARRAY_BUFFER缓冲器 
-	glVertexAttribPointer(vPositionID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-	glUniform1i(isCubeID, 1);//用于确定传入是不是立方体的颜色
-	glEnableVertexAttribArray(colorID);
-	glVertexAttribPointer(colorID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(points.size() * sizeof(vec4)));
-	glDrawArrays(GL_TRIANGLES, 0, points.size());
-
+	//drawCube(m);
 
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 	glutSwapBuffers();
 
 }
+
+void drawCube(mat4 m) {
+	glUniform1i(isCubeID, 1);//用于确定传入是不是立方体的颜色
+
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, m);
+	glBindBuffer(GL_ARRAY_BUFFER, cube); //绑定GL_ARRAY_BUFFER缓冲器 
+	glVertexAttribPointer(vPositionID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+	
+	glEnableVertexAttribArray(colorID);
+	glVertexAttribPointer(colorID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(points.size() * sizeof(vec4)));
+
+	glEnableVertexAttribArray(NormalID);
+	glVertexAttribPointer(NormalID, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET((colors.size()+ points.size()) * sizeof(vec4)));
+
+
+	glDrawArrays(GL_TRIANGLES, 0, points.size());
+}
+
 
 mat4 Transpose(mat4 matrix) {
 	mat4 t;
@@ -985,8 +922,18 @@ void idle() {
 	if (frame%2000 == 0) {
 		if (frame % 20000 == 0) {
 			TEXTURE2++;
-		}
+\
+			if (abs(theta[LeftUpperLeg]-150)<0.001) {
+				theta[LeftUpperLeg] = theta[RightUpperLeg];
+				theta[RightUpperLeg] = 150;
+			}
+			else {
+				theta[RightUpperLeg] = theta[LeftUpperLeg];				
+				theta[LeftUpperLeg] = 150;
+			}
 
+		}
+		//translate.x++;
 		updateTheta(currentAxis, currentDirection);
 		glutPostRedisplay();
 	}
@@ -1060,19 +1007,34 @@ void keyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 }
 
-void drawGround() {
-
-}
 
 
 void quad(int a, int b, int c, int d)
 {
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[a]; Index++;
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[b]; Index++;
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[c]; Index++;
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[a]; Index++;
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[c]; Index++;
-	cube_colors[Index] = vertex_colors[a]; cube_points[Index] = cube_vertices[d]; Index++;
+	cube_colors[Index] = vertex_colors[a];
+	cube_points[Index] = cube_vertices[a]; 
+	cube_normals[Index] = vec3(cube_vertices[a].x, cube_vertices[a].y, cube_points[a].z);
+	Index++;
+	cube_colors[Index] = vertex_colors[a]; 
+	cube_points[Index] = cube_vertices[b]; 
+	cube_normals[Index] = vec3(cube_vertices[b].x, cube_vertices[b].y, cube_points[b].z);
+	Index++;
+	cube_colors[Index] = vertex_colors[a]; 
+	cube_points[Index] = cube_vertices[c]; 
+	cube_normals[Index] = vec3(cube_vertices[c].x, cube_vertices[c].y, cube_points[c].z);
+	Index++;
+	cube_colors[Index] = vertex_colors[a]; 
+	cube_points[Index] = cube_vertices[a]; 
+	cube_normals[Index] = vec3(cube_vertices[a].x, cube_vertices[a].y, cube_points[a].z);
+	Index++;
+	cube_colors[Index] = vertex_colors[a]; 
+	cube_points[Index] = cube_vertices[c]; 
+	cube_normals[Index] = vec3(cube_vertices[c].x, cube_vertices[c].y, cube_points[c].z);
+	Index++;
+	cube_colors[Index] = vertex_colors[a]; 
+	cube_points[Index] = cube_vertices[d]; 
+	cube_normals[Index] = vec3(cube_vertices[d].x, cube_vertices[d].y, cube_points[d].z);
+	Index++;
 }
 
 void colorcube(void)//这里生成单位立方体的六个表面
@@ -1092,10 +1054,29 @@ void torso(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * TORSO_HEIGHT, 0.0) *
 		Scale(TORSO_WIDTH, TORSO_HEIGHT, TORSO_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	//glUniform4fv(colorID, 1, color_torso);
+	
+	float lx = -lightPos[0];
+	float ly = -(lightPos[1] + 2);
+	float lz = -lightPos[2];
+
+	mat4 shadowProjMatrix(
+		-ly, 0.0, 0.0, 0.0,
+		lx, 0.0, lz, 1.0,
+		0.0, 0.0, -ly, 0.0,
+		0.0, 0, 0.0, -ly
+	);
+
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, shadowProjMatrix);
+	glUniform4fv(colorID, 1, black);
+
+	// 绘制阴影
+	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+
+
 	model_view = mvstack.pop();//恢复父节点矩阵
 }
 
@@ -1105,7 +1086,7 @@ void head(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * HEAD_HEIGHT, 0.0) *
 		Scale(HEAD_WIDTH, HEAD_HEIGHT, HEAD_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1116,7 +1097,7 @@ void left_upper_arm(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0) *
 		Scale(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1127,7 +1108,7 @@ void left_lower_arm(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0) *
 		Scale(LOWER_ARM_WIDTH, LOWER_ARM_HEIGHT, LOWER_ARM_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1139,7 +1120,7 @@ void right_upper_arm(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0) *
 		Scale(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1150,7 +1131,7 @@ void right_lower_arm(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0) *
 		Scale(LOWER_ARM_WIDTH, LOWER_ARM_HEIGHT, LOWER_ARM_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1162,7 +1143,7 @@ void left_upper_leg(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * UPPER_LEG_HEIGHT, 0.0) *
 		Scale(UPPER_LEG_WIDTH, UPPER_LEG_HEIGHT, UPPER_LEG_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1173,7 +1154,7 @@ void left_lower_leg(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * LOWER_LEG_HEIGHT, 0.0) *
 		Scale(LOWER_LEG_WIDTH, LOWER_LEG_HEIGHT, LOWER_LEG_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1184,7 +1165,7 @@ void right_upper_leg(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * UPPER_LEG_HEIGHT, 0.0) *
 		Scale(UPPER_LEG_WIDTH, UPPER_LEG_HEIGHT, UPPER_LEG_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1196,7 +1177,7 @@ void right_lower_leg(vec4 color_torso)
 	mat4 instance = (Translate(0.0, 0.5 * LOWER_LEG_HEIGHT, 0.0) *
 		Scale(LOWER_LEG_WIDTH, LOWER_LEG_HEIGHT, LOWER_LEG_WIDTH));//本节点局部变换矩阵
 
-	glUniformMatrix4fv(MatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
+	glUniformMatrix4fv(modelMatrixID, 1, GL_TRUE, model_view * instance);//父节点矩阵*本节点局部变换矩阵
 	glUniform4fv(colorID, 1, color_torso);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	glUniform4fv(colorID, 1, color_torso);
@@ -1215,10 +1196,11 @@ void initRobot() {
 
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_points) + sizeof(cube_colors),NULL, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_points) + sizeof(cube_colors)+sizeof(cube_normals),NULL, GL_DYNAMIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cube_points), cube_points);
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(cube_points), sizeof(cube_colors),cube_colors);
-
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(cube_points) + sizeof(cube_colors), sizeof(cube_normals), cube_normals);
+	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
@@ -1229,15 +1211,12 @@ void displayRobot(mat4 modelViewProjMatrix) {
 	glUniform1i(isCubeID, 1);//用于确定传入是不是立方体的颜色
 	glEnableVertexAttribArray(colorID);
 	glVertexAttribPointer(colorID, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(cube_points)));
-	
-	vec3 at = normalize(direction) + translate;
-	mat4 m = Translate(at.x, at.y, at.z)*RotateY(rotateTheta[1]);
-	//m = Transpose(modelViewProjMatrix)*m;
+	glEnableVertexAttribArray(NormalID);
+	glVertexAttribPointer(NormalID, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(cube_points)+sizeof(cube_colors)));
 
 	vec3 center(0.5*verticeScale*(imgWidth - 1), 0.5*yScale*Boxheight, 0.5*verticeScale*(imgHeight - 1));
-	vec3 cameraPos = position + direction+translate;
-	//m = Transpose(modelViewProjMatrix)*Translate(center.x, center.y, center.z)*RotateY(rotateTheta[1]);//移到中心
-	m = Transpose(modelViewProjMatrix)*Translate(cameraPos.x, cameraPos.y, cameraPos.z-1)*Scale(.5,.5,.5);//*RotateY(rotateTheta[1]);//移到相机
+	vec3 cameraPos = position + direction;
+	mat4 m = Translate(cameraPos.x, cameraPos.y, cameraPos.z)*Scale(.2,.2,.2);//*RotateY(rotateTheta[1]);//移到相机
 
 	GLfloat left = -10.0, right = 10.0;
 	GLfloat bottom = -5.0, top = 15.0;
@@ -1256,7 +1235,7 @@ void displayRobot(mat4 modelViewProjMatrix) {
 
 	mat4 projection = Camera::ortho(left, right, bottom, top, zNear, zFar);
 
-	model_view = m* projection*Translate(0,00,0)*RotateY(theta[Torso]);//* RotateY(theta[Torso]);//躯干变换矩阵
+	model_view = m* projection*Translate(0,0,0)*RotateY(theta[Torso]);//* RotateY(theta[Torso]);//躯干变换矩阵
 	torso(blue);//躯干绘制
 
 	mvstack.push(model_view);//保存躯干变换矩阵
@@ -1265,9 +1244,9 @@ void displayRobot(mat4 modelViewProjMatrix) {
 	model_view = mvstack.pop();//恢复躯干变换矩阵
 
 	mvstack.push(model_view); //保存躯干变换矩阵
-	model_view *= Translate(-0.5*TORSO_WIDTH, TORSO_HEIGHT, 0)*RotateZ(theta[LeftUpperArm]);
+	model_view *= Translate(-0.5*TORSO_WIDTH, TORSO_HEIGHT, 0)*RotateX(theta[LeftUpperArm]);
 	left_upper_arm(red);//左上臂绘制
-	model_view *= Translate(0, UPPER_ARM_HEIGHT, 0)*RotateZ(theta[LeftLowerArm]);
+	model_view *= Translate(0, UPPER_ARM_HEIGHT, 0)*RotateX(theta[LeftLowerArm]);
 	left_lower_arm(yellow);//左下臂绘制
 	model_view = mvstack.pop();//恢复躯干变换矩阵
 
@@ -1279,21 +1258,20 @@ void displayRobot(mat4 modelViewProjMatrix) {
 	model_view = mvstack.pop();//恢复躯干变换矩阵
 
 	mvstack.push(model_view); //保存躯干变换矩阵
-	model_view *= Translate(-0.5*TORSO_WIDTH, 0, 0)*RotateZ(theta[LeftUpperLeg]); //左上腿局部变换矩阵;
+	model_view *= Translate(-0.5*TORSO_WIDTH, 0, 0)*RotateX(theta[LeftUpperLeg]); //左上腿局部变换矩阵;
 	left_upper_leg(cyan);//左上腿绘制
-	model_view *= Translate(0, UPPER_LEG_HEIGHT, 0)*RotateZ(theta[LeftLowerLeg]);//左下腿局部变换矩阵;
+	model_view *= Translate(0, UPPER_LEG_HEIGHT, 0)*RotateX(theta[LeftLowerLeg]);//左下腿局部变换矩阵;
 	left_lower_leg(magenta);//左下腿绘制
 	model_view = mvstack.pop();//恢复躯干变换矩阵
 
 	mvstack.push(model_view); //保存躯干变换矩阵
-	model_view *= Translate(0.5*TORSO_WIDTH, 0, 0)*RotateZ(theta[RightUpperLeg]);//右上腿局部变换矩阵;
+	model_view *= Translate(0.5*TORSO_WIDTH, 0, 0)*RotateX(theta[RightUpperLeg]);//右上腿局部变换矩阵;
 	right_upper_leg(cyan);//右上腿绘制
-	model_view *= Translate(0, UPPER_LEG_HEIGHT, 0)*RotateZ(theta[RightLowerLeg]);//右上腿局部变换矩阵;
+	model_view *= Translate(0, UPPER_LEG_HEIGHT, 0)*RotateX(theta[RightLowerLeg]);//右上腿局部变换矩阵;
 	right_lower_leg(magenta);//右下腿绘制
 	model_view = mvstack.pop();//恢复躯干变换矩阵
 
 }
-
 
 void addMenuItem() {
 	glutAddMenuEntry("torso", Torso);
@@ -1327,55 +1305,34 @@ void menu(int option)
 
 
 void CreateBox(vector<vec3> cubePoints, ImgURL imgURL,CUBE &cube) {
-
-	vector<vec3> index = {
-		vec3(0,1,3),vec3(0,2,3),
-		vec3(2,3,5),vec3(2,4,5),
-		vec3(6,7,5),vec3(6,4,5),
-		vec3(6,7,1),vec3(6,0,1),
-		vec3(6,0,2),vec3(6,4,2),
-		vec3(7,1,3),vec3(7,5,3)
+	vector<vec3> p = {
+		vec3(-1,1,0),vec3(-1,-1,0),vec3(1,-1,0),vec3(1,1,0)
 	};
 
-	vector<vec2> uv = { vec2(0, 1), vec2(0, 0), vec2(1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0) };
-	vector<vec3> boxPoints;//正方体顶点数据
+	vector<vec3i> in = {vec3i(0,1,2),vec3i(0,3,2)};
+	vector<vec2> uvs = { vec2(0,1),vec2(0,0),vec2(1,0),vec2(1,1) };//uvs中保存的是与顶点数组中相应的纹理坐标，而不是实际的纹理，实际的纹理坐标由索引取出，即
+
+	vector<vec4> indexs = {
+		vec4(0,1,3,2),vec4(2,3,5,4),vec4(6,7,5,4),
+		vec4(6,7,1,0),vec4(6,0,2,4),vec4(7,1,3,5)
+	};
 
 	vector<vector<vec3>> cubeVertexs;
-	vector<vector<vec3>> indexs;
-	vector<vector<vec2>> uvss;
 
 	for (int i = 0;i != 6;i++) {
 		vector<vec3> points;
-		vector<vec3> index1;
-
-		index1.push_back(index[2 * i]);
-		index1.push_back(index[2 * i + 1]);
-
-		vec3 p1 = cubePoints[index[2 * i].x];
-		vec3 p2 = cubePoints[index[2 * i].y];
-		vec3 p3 = cubePoints[index[2 * i].z];
-		points.push_back(p1);
-		points.push_back(p2);
-		points.push_back(p3);
-
-		p1 = cubePoints[index[2 * i + 1].x];
-		p2 = cubePoints[index[2 * i + 1].y];
-		p3 = cubePoints[index[2 * i + 1].z];
-		points.push_back(p1);
-		points.push_back(p2);
-		points.push_back(p3);
-
+		points.push_back(cubePoints[indexs[i][0]]);
+		points.push_back(cubePoints[indexs[i][1]]);
+		points.push_back(cubePoints[indexs[i][2]]);
+		points.push_back(cubePoints[indexs[i][3]]);
 		cubeVertexs.push_back(points);
-		indexs.push_back(index1);
 	}
-
-	Createcube(cubeVertexs[0], indexs[0], uv, FRONT, imgURL.front_img, cube);
-	Createcube(cubeVertexs[1], indexs[1], uv, RIGHT, imgURL.right_img, cube);
-	Createcube(cubeVertexs[2], indexs[2], uv, BACK, imgURL.back_img, cube);
-	Createcube(cubeVertexs[3], indexs[3], uv, LEFT, imgURL.left_img, cube);
-	Createcube(cubeVertexs[4], indexs[4], uv, TOP, imgURL.top_img, cube);
-	Createcube(cubeVertexs[5], indexs[5], uv, BOTTOM, imgURL.bottom_img, cube);
-	
+	Createcube(cubeVertexs[0], in, uvs, FRONT, imgURL.front_img, cube);
+	Createcube(cubeVertexs[1], in, uvs, RIGHT, imgURL.right_img, cube);
+	Createcube(cubeVertexs[2], in, uvs, BACK, imgURL.back_img, cube);
+	Createcube(cubeVertexs[3], in, uvs, LEFT, imgURL.left_img, cube);
+	Createcube(cubeVertexs[4], in, uvs, TOP, imgURL.top_img, cube);
+	Createcube(cubeVertexs[5], in, uvs, BOTTOM, imgURL.bottom_img, cube);
 	
 }
 
@@ -1391,7 +1348,7 @@ void displayBox(mat4 modelViewMatrix, CUBE& cube) {
 }
 
 
-void Createcube(vector<vec3> cubeVertex, vector<vec3> index, vector<vec2> uvIndex, GLuint face, string file,CUBE &cube) {
+void Createcube(vector<vec3> cubeVertex, vector<vec3i> index, vector<vec2> uvs, GLuint face, string file,CUBE &cube) {
 
 	CreateTexture(file, cube.cubeTexBO[face]);
 
@@ -1399,18 +1356,25 @@ void Createcube(vector<vec3> cubeVertex, vector<vec3> index, vector<vec2> uvInde
 	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeVBO[face]);
 	glBufferData(GL_ARRAY_BUFFER, cubeVertex.size() * sizeof(vec3), &cubeVertex[0], GL_STATIC_DRAW);
 
+
 	glGenBuffers(1, &cube.cubeIBO[face]);// 索引
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.cubeIBO[face]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(vec3), &index[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(vec3i), &index[0], GL_STATIC_DRAW);
 
 	glGenBuffers(1, &cube.cubeUVBO[face]);// UV
 	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeUVBO[face]);
-	glBufferData(GL_ARRAY_BUFFER, uvIndex.size() * sizeof(vec2), &uvIndex[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &cube.cubeNormal[face]);
+	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeNormal[face]);
+	glBufferData(GL_ARRAY_BUFFER, cubeVertex.size() * sizeof(vec3), &cubeVertex[0], GL_STATIC_DRAW);
+
+	
 }
 
 void displaycube(GLuint face, mat4 m,CUBE &cube) {
 	glUniform1i(isCubeID, 0);
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, m);
+	glUniformMatrix4fv(modelMatrixID, 1, GL_FALSE, m);
 
 	//传递顶点、索引、UV
 	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeVBO[face]); //绑定GL_ARRAY_BUFFER缓冲器 
@@ -1420,7 +1384,11 @@ void displaycube(GLuint face, mat4 m,CUBE &cube) {
 
 	glEnableVertexAttribArray(vertexUVID);
 	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeUVBO[face]);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(vertexUVID, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glEnableVertexAttribArray(NormalID);
+	glBindBuffer(GL_ARRAY_BUFFER, cube.cubeNormal[face]);
+	glVertexAttribPointer(NormalID, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	//传递贴图纹理
 	glActiveTexture(GL_TEXTURE0);
@@ -1428,6 +1396,6 @@ void displaycube(GLuint face, mat4 m,CUBE &cube) {
 	glUniform1i(TextureID, 0);
 
 	//绘制
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
 }
 

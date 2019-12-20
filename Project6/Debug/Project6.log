@@ -8,70 +8,60 @@ d:\vs2015code\project6\project6\include\mat.h(723): warning C4244: '=': conversi
 d:\vs2015code\project6\project6\include\mat.h(726): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
 d:\vs2015code\project6\project6\include\mat.h(743): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
 d:\vs2015code\project6\project6\freeimage.h : warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-d:\vs2015code\project6\project6\main.cpp(119): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(120): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(121): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(132): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(132): warning C4244: 'initializing': conversion from 'double' to 'const GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(134): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(135): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(138): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(197): warning C4305: 'initializing': truncation from 'double' to 'float'
-d:\vs2015code\project6\project6\main.cpp(198): warning C4305: 'initializing': truncation from 'double' to 'float'
-d:\vs2015code\project6\project6\main.cpp(200): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(423): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(479): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(487): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(496): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(508): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(513): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(538): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(541): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(593): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(608): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(612): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(613): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(618): warning C4244: 'initializing': conversion from 'int' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(619): warning C4244: 'initializing': conversion from 'int' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(632): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(633): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(635): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(636): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(637): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(639): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(640): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(641): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(707): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(708): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(709): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(762): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(763): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(810): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(899): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(911): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(932): warning C4244: 'argument': conversion from 'double' to 'const GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(972): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(975): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(978): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1002): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1007): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1031): warning C4305: '-=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1034): warning C4305: '+=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1037): warning C4305: '-=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1040): warning C4305: '+=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1043): warning C4305: '-=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1046): warning C4305: '+=': truncation from 'double' to 'GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1128): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1151): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1174): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1197): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
-d:\vs2015code\project6\project6\main.cpp(1237): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1354): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1355): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1356): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1361): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1362): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(1363): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
-d:\vs2015code\project6\project6\main.cpp(589): warning C4715: 'getDib': not all control paths return a value
+d:\vs2015code\project6\project6\main.cpp(125): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(126): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(127): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(138): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(138): warning C4244: 'initializing': conversion from 'double' to 'const GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(140): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(141): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(144): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(203): warning C4305: 'initializing': truncation from 'double' to 'float'
+d:\vs2015code\project6\project6\main.cpp(204): warning C4305: 'initializing': truncation from 'double' to 'float'
+d:\vs2015code\project6\project6\main.cpp(206): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(430): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(488): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(496): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(505): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(530): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(535): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(559): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(562): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(646): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(661): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(662): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(663): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(699): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(700): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(702): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(764): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(765): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(785): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(819): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(837): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(851): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(852): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(909): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(912): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(915): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(949): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(954): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(978): warning C4305: '-=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(981): warning C4305: '+=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(984): warning C4305: '-=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(987): warning C4305: '+=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(990): warning C4305: '-=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(993): warning C4305: '+=': truncation from 'double' to 'GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1109): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1132): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1155): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1178): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1217): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(1219): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+d:\vs2015code\project6\project6\main.cpp(1324): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(1325): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(1326): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(1327): warning C4244: 'argument': conversion from 'GLfloat' to 'unsigned int', possible loss of data
+d:\vs2015code\project6\project6\main.cpp(610): warning C4715: 'getDib': not all control paths return a value
   Project6.vcxproj -> D:\VS2015CODE\Project6\Debug\Project6.exe
   Project6.vcxproj -> D:\VS2015CODE\Project6\Debug\Project6.pdb (Partial PDB)

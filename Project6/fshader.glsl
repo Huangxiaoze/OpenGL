@@ -3,7 +3,7 @@ in vec2 UV;
 in vec3 Normal0;    
 in vec4 Color;
 in vec3 vPosition1;
-in vec3 vPosition2;
+in vec3 lightPos_new;
 
 out vec4 FragColor;   
 //光照 
@@ -31,41 +31,46 @@ void main()
 	}else{
 		vColor=Color;
 	}
-	//环境光
-    vec4 AmbientColor =gDirectionalLight.AmbientIntensity * vec4(gDirectionalLight.Color, 1.0f) * vColor;                         
 	
-	//漫反射                                                                                   
-    float DiffuseFactor = dot(normalize(Normal0), -gDirectionalLight.Direction);     
-   
-    vec4 lightDir = normalize(gDirectionalLight.lightPos - vec4(vPosition2,0.0));
-	vec4 normal = normalize(vec4(Normal0, 0.0));
-	float diffFactor = max(dot(lightDir, normal),0.0);
-	vec4 DiffuseColor = diffFactor * vec4(gDirectionalLight.Color,1) * vColor;
+	//////////////////////////////////////////////////
+	//光照
 
-	/*
-		vec4 DiffuseColor;                                                                
-		if (DiffuseFactor > 0) {                                                        
-			DiffuseColor = vec4(gDirectionalLight.Color, 1.0f) * gDirectionalLight.DiffuseIntensity *DiffuseFactor;                                               
-		} else {                                                                          
-			DiffuseColor = vec4(0, 0, 0, 0);                                            
-		} 
-	*/     
+	// TODO 设置三维物体的材质属性
+	vec3 ambiColor = vec3(0.2, 0.2, 0.2);
+	vec3 diffColor = vec3(0.5, 0.5, 0.5);
+	vec3 specColor = vec3(0.3, 0.3, 0.3);
+
+	
+	// 环境光成分
+	float   ambientStrength = 0.1f;
+	vec3    ambient = ambientStrength * gDirectionalLight.Color * vColor.xyz;
+	
+	
+	// 漫反射光成分 此时需要光线方向为指向光源
+	vec3    lightDir = normalize(lightPos_new - vPosition1);
+	vec3    normal = normalize(Normal0);
+	float   diffFactor = max(dot(lightDir, normal), 0.0);
+	vec3    diffuse = diffFactor * gDirectionalLight.Color * vColor.xyz;
+
+
+	//FragColor = vec4(1,0,0,1);return;
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	if(isCube==1){//立方体
-		FragColor = vColor*(AmbientColor + DiffuseColor);
-		//FragColor = vec4(1,1,1,1);
-		return;
+		FragColor = vColor*vec4(ambient+diffuse,1.0);
 	}else if(isCube == 2){//地面
-		if(vPosition1.y<0.4){
+		if(vPosition1.y<depth-0.01){
 			float x = UV.x;
 			float y = UV.y;
 			x= x+ test;
 			if(x>1){x = x-1;}
 			vec2 t = vec2(x,y);
-			FragColor = texture2D(myTexture, t)*(AmbientColor + DiffuseColor);	
+			float alph = y;
+			FragColor = texture2D(myTexture, t)*vec4(ambient*1.2+diffuse*1.2,1.0)*alph+texture2D(myTexture2, UV.xy)*vec4(ambient+diffuse,1.0)*(1-alph);
 		}else{
-			FragColor = texture2D(myTexture2, UV.xy)*(AmbientColor + DiffuseColor) ;
+			FragColor = texture2D(myTexture2, UV.xy)*vec4(ambient+diffuse,1.0);
 		} 	
 	} else {//天空盒 0
-		FragColor = texture2D(myTexture, UV.xy)*(AmbientColor + DiffuseColor) ;
+		FragColor =  texture2D(myTexture, UV.xy)*vec4(ambient+diffuse,1.0);
 	}
 }
