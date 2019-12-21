@@ -25,13 +25,10 @@ void main()
   // gl_Position = matrix * vec4(vPosition, 1.0);
    
    mat4 modelViewProj = projMatrix*viewMatrix* modelMatrix;
-
    gl_Position = modelViewProj*vec4(vPosition,1.0);
 
     UV = vertexUV;
-	vPosition1 = vPosition;	
 	Color = color;
-    Normal0 = (gWorld * vec4(Normal, 0.0)).xyz;
 
 
 	vPosition1 = (modelMatrix * vec4(vPosition, 1.0)).xyz; // 在世界坐标系中指定
@@ -39,5 +36,15 @@ void main()
 	Normal0 = (normalMatrix * vec4(Normal,0.0)).xyz; // 计算法向量经过模型变换后值
 
 	lightPos_new = lightPos;
+	
 
+
+
+
+
+	// TODO 将光源位置变换到相机坐标系下
+	vec4 lightPos_cameraspace =modelMatrix * vec4(lightPos, 1.0);
+	
+	// 对光源坐标做透视投影
+	lightPos_new = lightPos_cameraspace.xyz / lightPos_cameraspace.w;
 }

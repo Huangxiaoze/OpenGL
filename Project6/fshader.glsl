@@ -59,7 +59,7 @@ void main()
 	if(isCube==1){//立方体
 		FragColor = vColor*vec4(ambient+diffuse,1.0);
 	}else if(isCube == 2){//地面
-		if(vPosition1.y<depth-0.01){
+		if(vPosition1.y<depth-0.15){
 			float x = UV.x;
 			float y = UV.y;
 			x= x+ test;
@@ -71,6 +71,6 @@ void main()
 			FragColor = texture2D(myTexture2, UV.xy)*vec4(ambient+diffuse,1.0);
 		} 	
 	} else {//天空盒 0
-		FragColor =  texture2D(myTexture, UV.xy)*vec4(ambient+diffuse,1.0);
+		FragColor =  texture2D(myTexture, UV.xy);
 	}
 }
